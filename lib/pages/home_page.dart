@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/workout.dart';
 import '../widgets/workout_tile.dart';
 import 'add_workout_page.dart';
@@ -23,16 +25,41 @@ class _HomePageState extends State<HomePage> {
     'Cycling',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadWorkouts();
+  }
+
+  Future<void> _loadWorkouts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('workouts');
+    if (saved != null) {
+      final List decoded = jsonDecode(saved);
+      setState(() {
+        workouts = decoded.map((e) => Workout.fromJson(e)).toList();
+      });
+    }
+  }
+
+  Future<void> _saveWorkouts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(workouts.map((e) => e.toJson()).toList());
+    await prefs.setString('workouts', encoded);
+  }
+
   void _addWorkout(Workout workout) {
     setState(() {
       workouts.add(workout);
     });
+    _saveWorkouts();
   }
 
   void _deleteWorkout(int index) {
     setState(() {
       workouts.removeAt(index);
     });
+    _saveWorkouts();
   }
 
   List<Workout> get filteredWorkouts {
